@@ -98,17 +98,16 @@ class PayPalPaymentMethod @JsonCreator constructor(
     override fun submit(): PaymentResult {
         val payment = Payment().apply {
             intent = "sale"
-            transactions = details.items.map {
-                Transaction().apply {
-                    amount = Amount(it.price.currency, it.price.total)
-                    description = it.name
-                }
+            payer = Payer().apply {
+                paymentMethod = "paypal"
             }
+            transactions = listOf(Transaction().apply {
+                amount = Amount(details.totalPrice.currency, details.totalPrice.total)
+            })
             redirectUrls = RedirectUrls().apply {
                 returnUrl = context.fullAcceptAddress
                 cancelUrl = context.fullCancelAddress
             }
-            paymentInstruction = PaymentInstruction(null, null, null, Currency(details.totalPrice.currency, details.totalPrice.total))
         }
         val created = payment.create(context.context)
         context.paymentStorage.registerPayment(PayPalPaymentData(created.id, successUri, cancelUri))

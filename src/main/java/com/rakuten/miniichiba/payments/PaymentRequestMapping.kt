@@ -22,7 +22,7 @@ class ObjectMappingInjector {
 
 @Controller
 class PaymentRequestMapping @Autowired constructor(val mapper: ObjectMapper) {
-    @PostMapping("/checkout")
+    @PostMapping("/checkout", produces = ["application/json"])
     fun handleCheckoutRequest(
             request: HttpServletRequest) = mapper.readValue(request.reader, PaymentMethod::class.java).submit()
 }
