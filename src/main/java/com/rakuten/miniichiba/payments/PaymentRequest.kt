@@ -26,7 +26,7 @@ data class PaymentData @JsonCreator constructor(
         @JsonProperty("items", required = true) val items: List<Item>)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentMethod")
-@JsonSubTypes(JsonSubTypes.Type(value = PayPalPaymentMethod::class, name = "paypal"))
-abstract class PaymentMethod {
+@JsonSubTypes(JsonSubTypes.Type(value = PayPalPaymentRequest::class, name = "paypal"))
+abstract class PaymentRequest {
     abstract fun submit(): PaymentResult
 }

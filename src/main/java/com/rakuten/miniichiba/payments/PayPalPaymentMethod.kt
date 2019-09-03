@@ -81,11 +81,11 @@ class PayPalJsonContext @Autowired constructor(
     }
 }
 
-class PayPalPaymentMethod @JsonCreator constructor(
+class PayPalPaymentRequest @JsonCreator constructor(
         @JsonProperty("details", required = true) val details: PaymentData,
         @JsonProperty("successUri", required = true) val successUri: URI,
         @JsonProperty("cancelUri", required = true) val cancelUri: URI,
-        @JacksonInject val context: PayPalJsonContext) : PaymentMethod() {
+        @JacksonInject val context: PayPalJsonContext) : PaymentRequest() {
 
     override fun submit(): PaymentResult {
         val payment = Payment().apply {
