@@ -1,4 +1,4 @@
-package com.rakuten.miniichiba.payments
+package com.rakuten.miniichiba.payments.paypal
 
 import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonCreator
@@ -6,6 +6,10 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.*
 import com.paypal.api.payments.*
 import com.paypal.base.rest.APIContext
+import com.rakuten.miniichiba.payments.PaymentData
+import com.rakuten.miniichiba.payments.PaymentRequest
+import com.rakuten.miniichiba.payments.PaymentResult
+import com.rakuten.miniichiba.payments.RedirectPaymentResult
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -42,7 +46,10 @@ class PayPalPaymentController @Autowired constructor(
 
     @RequestMapping(ACCEPT_REQUEST)
     fun processAcceptedPayment(
-            response: HttpServletResponse, @RequestParam paymentId: String, @RequestParam token: String, @RequestParam("PayerID") payer: String) {
+            response: HttpServletResponse,
+            @RequestParam paymentId: String,
+            @RequestParam token: String,
+            @RequestParam("PayerID") payer: String) {
         val paymentData = storage.getAndRemovePaymentWithToken(token)
         if (paymentId != paymentData.id)
             throw IllegalAccessException("Accepted payment ID not equal to stored ID")
@@ -73,8 +80,8 @@ class PayPalJsonContext @Autowired constructor(
         injectables: InjectableValues.Std,
         @Value("\${payments.servlet.address}") servletAddress: String) {
 
-    internal val fullAcceptAddress: String = servletAddress + ACCEPT_REQUEST
-    internal val fullCancelAddress: String = servletAddress + CANCEL_REQUEST
+    internal val fullAcceptAddress = servletAddress + ACCEPT_REQUEST
+    internal val fullCancelAddress = servletAddress + CANCEL_REQUEST
 
     init {
         injectables.addValue(PayPalJsonContext::class.java, this)

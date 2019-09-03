@@ -1,4 +1,4 @@
-package com.rakuten.miniichiba.payments
+package com.rakuten.miniichiba.payments.paypal
 
 import org.springframework.stereotype.Component
 import java.util.concurrent.ConcurrentHashMap
