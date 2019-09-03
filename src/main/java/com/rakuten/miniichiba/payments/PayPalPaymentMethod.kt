@@ -3,54 +3,49 @@ package com.rakuten.miniichiba.payments
 import com.fasterxml.jackson.annotation.JacksonInject
 import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
-import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.databind.*
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.paypal.api.payments.*
 import com.paypal.base.rest.APIContext
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.stereotype.Component
-import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.RestController
 import java.net.URI
-import javax.servlet.ServletContext
 import javax.servlet.http.HttpServletResponse
 
-data class PayPalPaymentData(val id: String, val successUri: URI, val cancelUri: URI)
+data class PayPalPaymentData(val id: String, val token: String, val successUri: URI, val cancelUri: URI)
 
 interface PayPalPaymentStorage {
     fun registerPayment(data: PayPalPaymentData)
-    fun getAndRemovePaymentWithId(id: String): PayPalPaymentData
+    fun getAndRemovePaymentWithToken(token: String): PayPalPaymentData
 }
 
 private const val ACCEPT_REQUEST = "/paypal/accept"
 private const val CANCEL_REQUEST = "/paypal/cancel"
 
 @Component
-class PayPalBeanFactory(
-        @Value("\${paypal.mode}") private val paypalMode: String,
-        @Value("\${paypal.client}") private val paypalClient: String,
-        @Value("\${paypal.secret}") private val paypalSecret: String) {
-
+class PayPalBeanFactory {
     @Bean
-    fun createApiContext(): APIContext = APIContext(paypalClient, paypalSecret, paypalMode)
+    fun createApiContext(
+            @Value("\${payments.paypal.mode}") paypalMode: String,
+            @Value("\${payments.paypal.client}") paypalClient: String,
+            @Value("\${payments.paypal.secret}") paypalSecret: String): APIContext = APIContext(paypalClient, paypalSecret, paypalMode)
 }
 
-@Controller
+@RestController
 class PayPalPaymentController @Autowired constructor(
         private val storage: PayPalPaymentStorage,
         private val context: APIContext) {
 
     @RequestMapping(ACCEPT_REQUEST)
     fun processAcceptedPayment(
-            response: HttpServletResponse, @RequestParam paymentId: String, @RequestParam("PayerID") payer: String) {
-        val paymentData = storage.getAndRemovePaymentWithId(paymentId)
+            response: HttpServletResponse, @RequestParam paymentId: String, @RequestParam token: String, @RequestParam("PayerID") payer: String) {
+        val paymentData = storage.getAndRemovePaymentWithToken(token)
+        if (paymentId != paymentData.id)
+            throw IllegalAccessException("Accepted payment ID not equal to stored ID")
         val payment = Payment().apply { id = paymentId }
         val execution = PaymentExecution().apply { payerId = payer }
         response.status = HttpServletResponse.SC_FOUND
@@ -64,8 +59,8 @@ class PayPalPaymentController @Autowired constructor(
     }
 
     @RequestMapping(CANCEL_REQUEST)
-    fun processCancelledPayment(response: HttpServletResponse, @RequestParam paymentId: String) {
-        val paymentData = storage.getAndRemovePaymentWithId(paymentId)
+    fun processCancelledPayment(response: HttpServletResponse, @RequestParam token: String) {
+        val paymentData = storage.getAndRemovePaymentWithToken(token)
         response.status = HttpServletResponse.SC_FOUND
         response.setHeader("Location", paymentData.cancelUri.toString())
     }
@@ -75,16 +70,13 @@ class PayPalPaymentController @Autowired constructor(
 class PayPalJsonContext @Autowired constructor(
         internal val paymentStorage: PayPalPaymentStorage,
         internal val context: APIContext,
-        servletContext: ServletContext,
-        injectables: InjectableValues.Std) {
+        injectables: InjectableValues.Std,
+        @Value("\${payments.servlet.address}") servletAddress: String) {
 
-    internal val fullAcceptAddress: String
-    internal val fullCancelAddress: String
+    internal val fullAcceptAddress: String = servletAddress + ACCEPT_REQUEST
+    internal val fullCancelAddress: String = servletAddress + CANCEL_REQUEST
 
     init {
-        val serverAddress = "https://" + servletContext.virtualServerName + servletContext.contextPath
-        fullAcceptAddress = serverAddress + ACCEPT_REQUEST
-        fullCancelAddress = serverAddress + CANCEL_REQUEST
         injectables.addValue(PayPalJsonContext::class.java, this)
     }
 }
@@ -102,7 +94,10 @@ class PayPalPaymentMethod @JsonCreator constructor(
                 paymentMethod = "paypal"
             }
             transactions = listOf(Transaction().apply {
-                amount = Amount(details.totalPrice.currency, details.totalPrice.total)
+                amount = Amount(details.totalPrice.currency, details.totalPrice.value)
+                itemList = ItemList().apply {
+                    items = details.items.map { Item(it.name, it.quantity ?: "1", it.price.value, it.price.currency) }
+                }
             })
             redirectUrls = RedirectUrls().apply {
                 returnUrl = context.fullAcceptAddress
@@ -110,7 +105,9 @@ class PayPalPaymentMethod @JsonCreator constructor(
             }
         }
         val created = payment.create(context.context)
-        context.paymentStorage.registerPayment(PayPalPaymentData(created.id, successUri, cancelUri))
-        return RedirectPaymentResult(URI(created.links.find { it.rel == "approval_url" }!!.href))
+        val approvalUrl = URI(created.links.find { it.rel == "approval_url" }!!.href)
+        val token = approvalUrl.query.split('&').find { it.startsWith("token=") }!!.substring(6)
+        context.paymentStorage.registerPayment(PayPalPaymentData(created.id, token, successUri, cancelUri))
+        return RedirectPaymentResult(approvalUrl)
     }
 }

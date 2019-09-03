@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RestController
 import javax.servlet.http.HttpServletRequest
 
 @Component
@@ -20,9 +22,8 @@ class ObjectMappingInjector {
     fun createInjectables() = InjectableValues.Std()
 }
 
-@Controller
+@RestController
 class PaymentRequestMapping @Autowired constructor(val mapper: ObjectMapper) {
     @PostMapping("/checkout", produces = ["application/json"])
-    fun handleCheckoutRequest(
-            request: HttpServletRequest) = mapper.readValue(request.reader, PaymentMethod::class.java).submit()
+    fun handleCheckoutRequest(@RequestBody method: PaymentMethod) = method.submit()
 }

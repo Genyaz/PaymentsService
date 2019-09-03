@@ -7,12 +7,13 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.net.URI
 
 data class Price @JsonCreator constructor(
-        @JsonProperty("total", required = true) val total: String,
+        @JsonProperty("value", required = true) val value: String,
         @JsonProperty("currency", required = true) val currency: String)
 
 data class Item @JsonCreator constructor(
         @JsonProperty("name", required = true) val name: String,
-        @JsonProperty("price", required = true) val price: Price)
+        @JsonProperty("price", required = true) val price: Price,
+        @JsonProperty("quantity", required = false) val quantity: String?)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentResult")
 @JsonSubTypes(JsonSubTypes.Type(value = RedirectPaymentResult::class, name = "redirect"))

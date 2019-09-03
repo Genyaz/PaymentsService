@@ -8,8 +8,8 @@ class LocalPayPalPaymentStorage: PayPalPaymentStorage {
     private val storage = ConcurrentHashMap<String, PayPalPaymentData>()
 
     override fun registerPayment(data: PayPalPaymentData) {
-        storage[data.id] = data
+        storage[data.token] = data
     }
 
-    override fun getAndRemovePaymentWithId(id: String): PayPalPaymentData = storage.remove(id)!!
+    override fun getAndRemovePaymentWithToken(token: String): PayPalPaymentData = storage.remove(token)!!
 }
