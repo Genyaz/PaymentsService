@@ -170,7 +170,7 @@ class PayPalPaymentRequest @JsonCreator constructor(
         } else {
             val payload = mapOf("transactionId" to transactionId)
             post(url="$pointsUrl/points/transaction/confirm", data=payload)
-            return RedirectPaymentResult(URI(context.fullAcceptAddress))
+            return RedirectPaymentResult(successUri)
         }
     }
 }
