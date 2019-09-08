@@ -5,6 +5,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 @Component
 class LocalPayPalPaymentStorage: PayPalPaymentStorage {
+    override fun hasToken(token: String): Boolean = storage.contains(token)
+
     private val storage = ConcurrentHashMap<String, PayPalPaymentData>()
 
     override fun registerPayment(data: PayPalPaymentData) {

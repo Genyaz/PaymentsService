@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.net.URI
 import javax.servlet.http.HttpServletResponse
 
@@ -25,6 +27,7 @@ data class PayPalPaymentData(val id: String, val token: String, val successUri: 
 interface PayPalPaymentStorage {
     fun registerPayment(data: PayPalPaymentData)
     fun getAndRemovePaymentWithToken(token: String): PayPalPaymentData
+    fun hasToken(token: String): Boolean
 }
 
 private const val ACCEPT_REQUEST = "/paypal/accept"
@@ -67,9 +70,11 @@ class PayPalPaymentController @Autowired constructor(
 
     @RequestMapping(CANCEL_REQUEST)
     fun processCancelledPayment(response: HttpServletResponse, @RequestParam token: String) {
-        val paymentData = storage.getAndRemovePaymentWithToken(token)
-        response.status = HttpServletResponse.SC_FOUND
-        response.setHeader("Location", paymentData.cancelUri.toString())
+        if (storage.hasToken(token)) {
+            val paymentData = storage.getAndRemovePaymentWithToken(token)
+            response.status = HttpServletResponse.SC_FOUND
+            response.setHeader("Location", paymentData.cancelUri.toString())
+        }
     }
 }
 
@@ -95,15 +100,35 @@ class PayPalPaymentRequest @JsonCreator constructor(
         @JacksonInject val context: PayPalJsonContext) : PaymentRequest() {
 
     override fun submit(): PaymentResult {
+        val pointsString = if (details.points != null) details.points.value else "0"
+        var pointsDiscount = pointsString.toBigDecimal()
+        val fixedItems = mutableListOf<Item>()
+        var totalPrice = BigDecimal.ZERO
+
+        for (item in details.items) {
+            val quantity = if (item.quantity != null) item.quantity.toBigDecimal() else BigDecimal.ONE
+            val oldPrice = item.price.value.toBigDecimal().multiply(quantity)
+            if (oldPrice <= pointsDiscount) {
+                pointsDiscount = pointsDiscount.minus(oldPrice)
+                fixedItems.add(Item(item.name, item.quantity ?: "1", "0", item.price.currency))
+            } else {
+                var newPrice = oldPrice.minus(pointsDiscount)
+                pointsDiscount = BigDecimal.ZERO
+                val newItemPrice = newPrice.divide(quantity).setScale(2, RoundingMode.CEILING)
+                newPrice = newItemPrice.multiply(quantity)
+                totalPrice = totalPrice.plus(newPrice)
+                fixedItems.add(Item(item.name, item.quantity ?: "1", newItemPrice.toString(), item.price.currency))
+            }
+        }
         val payment = Payment().apply {
             intent = "sale"
             payer = Payer().apply {
                 paymentMethod = "paypal"
             }
             transactions = listOf(Transaction().apply {
-                amount = Amount(details.totalPrice.currency, details.totalPrice.value)
+                amount = Amount(details.totalPrice.currency, totalPrice.toString())
                 itemList = ItemList().apply {
-                    items = details.items.map { Item(it.name, it.quantity ?: "1", it.price.value, it.price.currency) }
+                    items = fixedItems
                 }
             })
             redirectUrls = RedirectUrls().apply {
