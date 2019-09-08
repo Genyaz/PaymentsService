@@ -26,6 +26,13 @@
     <version>2.1.7.RELEASE</version>
   </parent>
 
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
   <dependencies>
 	<dependency>
 		<groupId>org.springframework.boot</groupId>
@@ -57,12 +64,17 @@
       <version>${kotlin.version}</version>
       <scope>test</scope>
     </dependency>
-      <!-- https://mvnrepository.com/artifact/com.stripe/stripe-java -->
-      <dependency>
-          <groupId>com.stripe</groupId>
-          <artifactId>stripe-java</artifactId>
-          <version>11.7.0</version>
-      </dependency>
+    <!-- https://mvnrepository.com/artifact/com.stripe/stripe-java -->
+    <dependency>
+        <groupId>com.stripe</groupId>
+        <artifactId>stripe-java</artifactId>
+        <version>11.7.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.github.jkcclemens</groupId>
+      <artifactId>khttp</artifactId>
+      <version>-0.1.0-g130b89c-16</version>
+    </dependency>
   </dependencies>
 
   <build>
