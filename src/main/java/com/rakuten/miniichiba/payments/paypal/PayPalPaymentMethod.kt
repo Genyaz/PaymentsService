@@ -39,7 +39,7 @@ class PayPalBeanFactory {
     fun createApiContext(
             @Value("\${payments.paypal.mode}") paypalMode: String,
             @Value("\${payments.paypal.client}") paypalClient: String,
-            @Value("\${payments.paypal.secret}") paypalSecret: String): APIContext = APIContext(paypalClient, paypalSecret, paypalMode)
+            @Value("\${payments.paypal.secret}") paypalSecret: String) = APIContext(paypalClient, paypalSecret, paypalMode)
 }
 
 @RestController

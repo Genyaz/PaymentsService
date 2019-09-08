@@ -6,7 +6,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.ImportResource
 
 @SpringBootApplication
-@EnableAutoConfiguration
 open class PaymentsMain
 
 fun main(args: Array<String>) {
