@@ -5,11 +5,9 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.databind.*
 import com.paypal.api.payments.*
+import com.paypal.api.payments.Item
 import com.paypal.base.rest.APIContext
-import com.rakuten.miniichiba.payments.PaymentData
-import com.rakuten.miniichiba.payments.PaymentRequest
-import com.rakuten.miniichiba.payments.PaymentResult
-import com.rakuten.miniichiba.payments.RedirectPaymentResult
+import com.rakuten.miniichiba.payments.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
@@ -170,7 +168,7 @@ class PayPalPaymentRequest @JsonCreator constructor(
         } else {
             val payload = mapOf("transactionId" to transactionId)
             post(url="$pointsUrl/points/transaction/confirm", data=payload)
-            return RedirectPaymentResult(successUri)
+            return SuccessPaymentResult("success")
         }
     }
 }

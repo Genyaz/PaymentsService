@@ -17,10 +17,16 @@ data class Item @JsonCreator constructor(
         @JsonProperty("quantity", required = false) val quantity: String?)
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "paymentResult")
-@JsonSubTypes(JsonSubTypes.Type(value = RedirectPaymentResult::class, name = "redirect"))
+@JsonSubTypes(JsonSubTypes.Type(value = RedirectPaymentResult::class, name = "redirect"),
+        JsonSubTypes.Type(value = SuccessPaymentResult::class, name = "success"),
+        JsonSubTypes.Type(value = ErrorPaymentResult::class, name = "error"))
 abstract class PaymentResult
 
 class RedirectPaymentResult(@JsonProperty val redirectURI: URI) : PaymentResult()
+
+class SuccessPaymentResult(@JsonProperty val success: String) : PaymentResult()
+
+class ErrorPaymentResult(@JsonProperty val error: String) : PaymentResult()
 
 data class PaymentData @JsonCreator constructor(
         @JsonProperty("userId", required = true) val userId: String,
