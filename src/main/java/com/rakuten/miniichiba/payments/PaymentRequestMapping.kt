@@ -23,6 +23,6 @@ class ObjectMappingInjector {
 
 @RestController
 class PaymentRequestMapping {
-    @PostMapping("/checkout", produces = ["application/json"])
+    @PostMapping("/payments/checkout", produces = ["application/json"])
     fun handleCheckoutRequest(@RequestBody request: PaymentRequest) = request.submit()
 }
