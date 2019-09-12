@@ -150,8 +150,7 @@ class PayPalPaymentRequest @JsonCreator constructor(
         var transactionId: String? = null
         var headers: Map<String, String?> = Collections.emptyMap()
         if (pointsSpent > BigDecimal.ZERO) {
-            val transactionPayload = JSONObject(mapOf("expires" to "2019-12-12T08:38:28.502Z",
-                    "amount" to -(pointsSpent.toInt()),
+            val transactionPayload = JSONObject(mapOf("amount" to -(pointsSpent.toInt()),
                     "comment" to "string"))
             // Base64 encoded "qwertyuiopasdfghjklzxcvbnm123456"
             val key = "cXdlcnR5dWlvcGFzZGZnaGprbHp4Y3Zibm0xMjM0NTY="
