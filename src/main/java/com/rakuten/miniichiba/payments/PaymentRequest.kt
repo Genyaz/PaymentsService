@@ -26,7 +26,7 @@ class RedirectPaymentResult(@JsonProperty val redirectURI: URI) : PaymentResult(
 class SuccessPaymentResult: PaymentResult()
 
 data class PaymentData @JsonCreator constructor(
-        @JsonProperty("userId", required = true) val userId: String,
+        @JsonProperty("token", required = true) val token: String,
         @JsonProperty("totalPrice", required = true) val totalPrice: Price,
         @JsonProperty("points", required = false) val points: Price?,
         @JsonProperty("items", required = true) val items: List<Item>)

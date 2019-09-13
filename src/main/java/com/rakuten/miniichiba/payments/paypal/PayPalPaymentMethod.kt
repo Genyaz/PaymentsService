@@ -141,7 +141,12 @@ class PayPalPaymentRequest @JsonCreator constructor(
                 pointsSpent = pointsSpent.plus(pointsDiscount)
                 var newPrice = oldPrice.minus(pointsDiscount)
                 pointsDiscount = BigDecimal.ZERO
-                val newItemPrice = newPrice.divide(quantity).setScale(2, RoundingMode.CEILING)
+
+                var newItemPrice = newPrice.divide(quantity).setScale(2, RoundingMode.CEILING)
+                if (item.price.currency == "JPY") {
+                    newItemPrice = newPrice.divide(quantity).setScale(0, RoundingMode.CEILING)
+                }
+
                 newPrice = newItemPrice.multiply(quantity)
                 totalPrice = totalPrice.plus(newPrice)
                 fixedItems.add(Item(item.name, item.quantity ?: "1", newItemPrice.toString(), item.price.currency))
@@ -152,23 +157,7 @@ class PayPalPaymentRequest @JsonCreator constructor(
         if (pointsSpent > BigDecimal.ZERO) {
             val transactionPayload = JSONObject(mapOf("amount" to -(pointsSpent.toInt()),
                     "comment" to "string"))
-            // Base64 encoded "qwertyuiopasdfghjklzxcvbnm123456"
-            val key = "cXdlcnR5dWlvcGFzZGZnaGprbHp4Y3Zibm0xMjM0NTY="
-
-            val currentDate = Date()
-            val c = Calendar.getInstance()
-            c.time = currentDate
-            c.add(Calendar.DATE, 5)
-            val expDate = c.timeInMillis / 1000
-            val jti = UUID.randomUUID()
-            val payload = "{\"userId\":\"" + details.userId + "\",\"jti\":\"" + jti + "\",\"exp\":" +
-                    expDate.toString() + "}"
-            val jwt = Jwts.builder()
-                    .setPayload(payload)
-                    .setHeaderParam("alg", "HS256")
-                    .setHeaderParam("typ", "JWT")
-            val jws = jwt.signWith(SignatureAlgorithm.HS256, key).compact()
-            headers = mapOf("Authorization" to "Bearer $jws", "Content-Type" to "application/json")
+            headers = mapOf("Authorization" to "Bearer ${details.token}", "Content-Type" to "application/json")
             val r = post(url = "${context.pointsUrl}/points/transaction/start", headers = headers,
                     data = transactionPayload)
             transactionId = r.jsonObject.get("transactionId").toString()
